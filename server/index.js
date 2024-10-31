@@ -84,3 +84,9 @@ res.send({msg:'voce foi logado', token: token})
 
 app.listen(8000)
 
+//git status
+//git add .
+//git status
+//git commit -m "mensagem"
+//git status
+//git push origin nomedasuabranch
