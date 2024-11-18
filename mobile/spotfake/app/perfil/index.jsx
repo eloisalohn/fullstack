@@ -12,13 +12,38 @@ export default function ProfileScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  useEffect(() => {
-    fetchUserData();
-  }, []);
+  const handleSendImage = async (imageUri) => {
+    try {
+      const data = {
+        file: imageUri,
+        upload_preset: 'ml_default',
+      };
+
+      const res = await fetch('https://api.cloudinary.com/v1_1/dmicd1vvk/upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Erro ${res.status}: ${res.statusText}`);
+      }
+
+      const result = await res.json();
+      setProfileImage(result.url);
+      console.log(result)
+    } catch (e) {
+      console.error('Erro ao enviar imagem:', e);
+      Alert.alert('Erro', 'Não foi possível enviar a imagem.');
+    }
+    
+  };
 
   const fetchUserData = async () => {
     try {
-      const response = await fetch('http://localhost:8000/get.users', {
+      const response = await fetch('http://192.168.0.100:8000/get.users', {
         method: 'GET',
         headers: {
           Accept: 'application/json',
@@ -26,22 +51,27 @@ export default function ProfileScreen() {
         },
       });
 
-      if (response.ok) {
-        const userData = await response.json();
-        setName(userData.name);
-        setEmail(userData.email);
-        setBio(userData.bio);
-      } else {
-        Alert.alert('Erro', 'Não foi possível carregar os dados do usuário.');
+      if (!response.ok) {
+        throw new Error(`Erro ${response.status}: ${response.statusText}`);
       }
+
+      if (!response.headers.get('content-type')?.includes('application/json')) {
+        throw new Error('Resposta não é JSON');
+      }
+
+      const userData = await response.json();
+      setName(userData.name);
+      setEmail(userData.email);
+      setBio(userData.bio);
     } catch (error) {
+      console.error('Erro ao buscar dados:', error);
       Alert.alert('Erro', 'Erro ao conectar ao servidor.');
     }
   };
 
   const pickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permissionResult.granted) {
+    if (permissionResult.granted === false) {
       Alert.alert('Permissão necessária', 'Permita o acesso à galeria para selecionar uma imagem.');
       return;
     }
@@ -55,6 +85,7 @@ export default function ProfileScreen() {
 
     if (!result.canceled) {
       setProfileImage(result.assets[0].uri);
+      handleSendImage(result.assets[0].uri);
     }
   };
 
@@ -71,6 +102,11 @@ export default function ProfileScreen() {
       Alert.alert('Erro', 'As senhas não coincidem.');
     }
   };
+
+  useEffect(() => {
+    fetchUserData();
+  }, []);
+
 
   return (
     <SafeAreaView style={styles.container}>
