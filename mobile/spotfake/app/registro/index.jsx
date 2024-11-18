@@ -6,24 +6,24 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from "react-native";
-import { Link } from 'expo-router'; 
+import { Link, useRouter } from 'expo-router'; 
 
 const Register = () => {
   const [name, setName] = useState("");
-  const [surname, setSurname] = useState("");
   const [bday, setBday] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const router = useRouter(); // Adicione esta linha
 
   const handleRegister = async () => {
-    if (!name || !surname || !bday || !email || !password || !confirmPassword) {
+    if (!name || !bday || !email || !password || !confirmPassword) {
       return alert("Todos os campos devem ser preenchidos");
     }
 
-    const formData = { name, surname, bday, email, password };
+    const formData = { nome:name, dataNascimento:bday, email:email, senha:password }; 
     try {
-      const res = await fetch("http://localhost:8000/registro", {
+      const res = await fetch("http://localhost:8000/autenticacao/registro", {
         method: "POST",
         headers: {
           Accept: "application/json",
@@ -34,6 +34,7 @@ const Register = () => {
       switch (res.status) {
         case 201:
           alert("Usuário criado");
+          router.push('/Home');
           break;
         case 406:
           alert("Preencha todos os campos");
@@ -51,20 +52,16 @@ const Register = () => {
   };
 
   const autoBirthdayFormater = (text) => {
-    const cleanedText = text.replace(/\D/g, "");
-    let formattedText = "";
-    if (cleanedText.length > 0) {
-      formattedText += cleanedText.substring(0, 2);
+  
+    const formattedText = text.replace(/[^0-9]/g, '').slice(0, 8); 
+    const day = formattedText.slice(0, 2);
+    const month = formattedText.slice(2, 4);
+    const year = formattedText.slice(4, 8);
+  
+    if (month && year) {
+      return `${day}/${month}/${year}`; 
     }
-    if (cleanedText.length >= 2) {
-      formattedText += "/";
-      formattedText += cleanedText.substring(2, 4);
-    }
-    if (cleanedText.length >= 4) {
-      formattedText += "/";
-      formattedText += cleanedText.substring(4, 8);
-    }
-    setBday(formattedText);
+    return formattedText; 
   };
 
   return (
@@ -80,21 +77,13 @@ const Register = () => {
         autoCapitalize="words"
       />
       <TextInput
-        style={styles.input}
-        placeholder="Sobrenome"
-        placeholderTextColor="#808080"
-        value={surname}
-        onChangeText={(text) => setSurname(text)}
-        autoCapitalize="words"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Data de nascimento"
-        placeholderTextColor="#808080"
-        value={bday}
-        onChangeText={(text) => autoBirthdayFormater(text)}
-        inputMode="numeric"
-      />
+  style={styles.input}
+  placeholder="Data de nascimento"
+  placeholderTextColor="#808080"
+  value={bday}
+  onChangeText={(text) => setBday(autoBirthdayFormater(text))} 
+  inputMode="numeric"
+/>
       <TextInput
         style={styles.input}
         placeholder="E-mail"
@@ -123,8 +112,8 @@ const Register = () => {
         autoCapitalize="none"
       />
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.cancelButton} > 
-        <Link href="../Tabs" style={styles.register}> <Text >VOLTAR</Text></Link>
+        <TouchableOpacity style={styles.cancelButton}> 
+          <Link href="../" style={styles.register}><Text>VOLTAR</Text></Link>
         </TouchableOpacity>
         <TouchableOpacity style={styles.registerButton} onPress={handleRegister}>
           <Text style={styles.buttonText}>Acessar</Text>
